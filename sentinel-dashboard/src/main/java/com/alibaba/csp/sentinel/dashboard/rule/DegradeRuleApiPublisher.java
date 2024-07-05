@@ -15,26 +15,26 @@
  */
 package com.alibaba.csp.sentinel.dashboard.rule;
 
-import java.util.List;
-import java.util.Set;
-
 import com.alibaba.csp.sentinel.dashboard.client.SentinelApiClient;
+import com.alibaba.csp.sentinel.dashboard.datasource.entity.rule.DegradeRuleEntity;
+import com.alibaba.csp.sentinel.dashboard.datasource.entity.rule.FlowRuleEntity;
 import com.alibaba.csp.sentinel.dashboard.discovery.AppManagement;
 import com.alibaba.csp.sentinel.dashboard.discovery.MachineInfo;
 import com.alibaba.csp.sentinel.util.StringUtil;
-
-import com.alibaba.csp.sentinel.dashboard.datasource.entity.rule.FlowRuleEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author Eric Zhao
  * @since 1.4.0
  */
-@Component("flowRulePublisher")
+@Component("degradeRulePublisher")
 @ConditionalOnProperty(prefix = "sentinel", name = "datasource", havingValue = "default", matchIfMissing = true)
-public class FlowRuleApiPublisher implements DynamicRulePublisher<List<FlowRuleEntity>> {
+public class DegradeRuleApiPublisher implements DynamicRulePublisher<List<DegradeRuleEntity>> {
 
     @Autowired
     private SentinelApiClient sentinelApiClient;
@@ -42,7 +42,7 @@ public class FlowRuleApiPublisher implements DynamicRulePublisher<List<FlowRuleE
     private AppManagement appManagement;
 
     @Override
-    public void publish(String app, List<FlowRuleEntity> rules) throws Exception {
+    public void publish(String app, List<DegradeRuleEntity> rules) throws Exception {
         if (StringUtil.isBlank(app)) {
             return;
         }
@@ -56,7 +56,7 @@ public class FlowRuleApiPublisher implements DynamicRulePublisher<List<FlowRuleE
                 continue;
             }
             // TODO: parse the results
-            sentinelApiClient.setFlowRuleOfMachine(app, machine.getIp(), machine.getPort(), rules);
+            sentinelApiClient.setDegradeRuleOfMachine(app, machine.getIp(), machine.getPort(), rules);
         }
     }
 }

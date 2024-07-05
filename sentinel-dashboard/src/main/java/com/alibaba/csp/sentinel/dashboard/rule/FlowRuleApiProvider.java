@@ -27,18 +27,21 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import com.alibaba.csp.sentinel.dashboard.datasource.entity.rule.FlowRuleEntity;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
  * @author Eric Zhao
  */
-@Component("flowRuleDefaultProvider")
+@Component("flowRuleProvider")
+@ConditionalOnProperty(prefix = "sentinel", name = "datasource", havingValue = "default", matchIfMissing = true)
 public class FlowRuleApiProvider implements DynamicRuleProvider<List<FlowRuleEntity>> {
 
     @Autowired
     private SentinelApiClient sentinelApiClient;
     @Autowired
     private AppManagement appManagement;
+    private int a = 10;
 
     @Override
     public List<FlowRuleEntity> getRules(String appName) throws Exception {

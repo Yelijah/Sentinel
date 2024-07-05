@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.csp.sentinel.dashboard.rule;
+package com.alibaba.csp.sentinel.dashboard.rule.nacos;
 
 import java.util.List;
-import java.util.Set;
-
-import com.alibaba.csp.sentinel.dashboard.client.SentinelApiClient;
-import com.alibaba.csp.sentinel.dashboard.discovery.AppManagement;
-import com.alibaba.csp.sentinel.dashboard.discovery.MachineInfo;
-import com.alibaba.csp.sentinel.util.StringUtil;
 
 import com.alibaba.csp.sentinel.dashboard.datasource.entity.rule.FlowRuleEntity;
+import com.alibaba.csp.sentinel.dashboard.rule.DynamicRulePublisher;
+import com.alibaba.csp.sentinel.datasource.Converter;
+import com.alibaba.csp.sentinel.util.AssertUtil;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.nacos.api.config.ConfigService;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -33,30 +34,20 @@ import org.springframework.stereotype.Component;
  * @since 1.4.0
  */
 @Component("flowRulePublisher")
-@ConditionalOnProperty(prefix = "sentinel", name = "datasource", havingValue = "default", matchIfMissing = true)
-public class FlowRuleApiPublisher implements DynamicRulePublisher<List<FlowRuleEntity>> {
+@ConditionalOnProperty(prefix = "sentinel", name = "datasource", havingValue = "nacos")
+public class FlowRuleNacosPublisher implements DynamicRulePublisher<List<FlowRuleEntity>> {
 
     @Autowired
-    private SentinelApiClient sentinelApiClient;
-    @Autowired
-    private AppManagement appManagement;
+    private ConfigService configService;
+    private Converter<List<FlowRuleEntity>, String> converter = JSON::toJSONString;
 
     @Override
     public void publish(String app, List<FlowRuleEntity> rules) throws Exception {
-        if (StringUtil.isBlank(app)) {
-            return;
-        }
+        AssertUtil.notEmpty(app, "app name cannot be empty");
         if (rules == null) {
             return;
         }
-        Set<MachineInfo> set = appManagement.getDetailApp(app).getMachines();
-
-        for (MachineInfo machine : set) {
-            if (!machine.isHealthy()) {
-                continue;
-            }
-            // TODO: parse the results
-            sentinelApiClient.setFlowRuleOfMachine(app, machine.getIp(), machine.getPort(), rules);
-        }
+        configService.publishConfig(app + NacosConfigUtil.FLOW_DATA_ID_POSTFIX,
+            NacosConfigUtil.GROUP_ID, converter.convert(rules));
     }
 }

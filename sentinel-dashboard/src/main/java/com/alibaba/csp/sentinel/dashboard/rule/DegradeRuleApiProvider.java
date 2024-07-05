@@ -15,26 +15,26 @@
  */
 package com.alibaba.csp.sentinel.dashboard.rule;
 
-import java.util.List;
-import java.util.Set;
-
 import com.alibaba.csp.sentinel.dashboard.client.SentinelApiClient;
+import com.alibaba.csp.sentinel.dashboard.datasource.entity.rule.DegradeRuleEntity;
+import com.alibaba.csp.sentinel.dashboard.datasource.entity.rule.FlowRuleEntity;
 import com.alibaba.csp.sentinel.dashboard.discovery.AppManagement;
 import com.alibaba.csp.sentinel.dashboard.discovery.MachineInfo;
 import com.alibaba.csp.sentinel.util.StringUtil;
-
-import com.alibaba.csp.sentinel.dashboard.datasource.entity.rule.FlowRuleEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
  * @author Eric Zhao
- * @since 1.4.0
  */
-@Component("flowRulePublisher")
+@Component("degradeRuleProvider")
 @ConditionalOnProperty(prefix = "sentinel", name = "datasource", havingValue = "default", matchIfMissing = true)
-public class FlowRuleApiPublisher implements DynamicRulePublisher<List<FlowRuleEntity>> {
+public class DegradeRuleApiProvider implements DynamicRuleProvider<List<DegradeRuleEntity>> {
 
     @Autowired
     private SentinelApiClient sentinelApiClient;
@@ -42,21 +42,19 @@ public class FlowRuleApiPublisher implements DynamicRulePublisher<List<FlowRuleE
     private AppManagement appManagement;
 
     @Override
-    public void publish(String app, List<FlowRuleEntity> rules) throws Exception {
-        if (StringUtil.isBlank(app)) {
-            return;
+    public List<DegradeRuleEntity> getRules(String appName) throws Exception {
+        if (StringUtil.isBlank(appName)) {
+            return new ArrayList<>();
         }
-        if (rules == null) {
-            return;
-        }
-        Set<MachineInfo> set = appManagement.getDetailApp(app).getMachines();
-
-        for (MachineInfo machine : set) {
-            if (!machine.isHealthy()) {
-                continue;
-            }
-            // TODO: parse the results
-            sentinelApiClient.setFlowRuleOfMachine(app, machine.getIp(), machine.getPort(), rules);
+        List<MachineInfo> list = appManagement.getDetailApp(appName).getMachines()
+            .stream()
+            .filter(MachineInfo::isHealthy)
+            .sorted((e1, e2) -> Long.compare(e2.getLastHeartbeat(), e1.getLastHeartbeat())).collect(Collectors.toList());
+        if (list.isEmpty()) {
+            return new ArrayList<>();
+        } else {
+            MachineInfo machine = list.get(0);
+            return sentinelApiClient.fetchDegradeRuleOfMachine(machine.getApp(), machine.getIp(), machine.getPort());
         }
     }
 }
