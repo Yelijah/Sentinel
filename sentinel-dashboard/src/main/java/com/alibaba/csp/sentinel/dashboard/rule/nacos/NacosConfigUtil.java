@@ -38,5 +38,8 @@ public final class NacosConfigUtil {
     public static final String SERVER_FLOW_CONFIG_DATA_ID_POSTFIX = "-cs-flow-config";
     public static final String SERVER_NAMESPACE_SET_DATA_ID_POSTFIX = "-cs-namespace-set";
 
+    public static final String GW_FLOW_DATA_ID_POSTFIX = "-gw-flow-rules";
+    public static final String GW_API_GROUP_DATA_ID_POSTFIX = "-gw-api-groups";
+
     private NacosConfigUtil() {}
 }
